@@ -12,7 +12,6 @@ public class PropertiesFactory {
 	public static String zkConn = null;
 	public static String zkPath = null;
 	public static String srcPluginDir = null;
-	public static String hdfsURL = null;
 	public static String[] admins = null;
 	public static String[] adminsAlerts = null;
 
@@ -28,7 +27,6 @@ public class PropertiesFactory {
 		zkConn = prop.getProperty("zkConn");
 		zkPath = prop.getProperty("zkPath");
 		srcPluginDir = prop.getProperty("srcPluginDir");
-		hdfsURL = prop.getProperty("hdfsURL");
 		admins = StringUtils.split(prop.getProperty("admins"), ",");
 		adminsAlerts = StringUtils.split(prop.getProperty("adminsAlerts"), ",");
 	}

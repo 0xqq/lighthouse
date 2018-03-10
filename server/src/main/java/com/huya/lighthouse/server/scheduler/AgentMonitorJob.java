@@ -13,10 +13,6 @@ import com.huya.lighthouse.model.po.def.DefAgentGroup;
 import com.huya.lighthouse.server.executor.AgentSelector;
 import com.huya.lighthouse.server.factory.DefAgentGroupFactory;
 import com.huya.lighthouse.server.factory.PropertiesFactory;
-import com.yy.dc.saas.message.svr.IMessagePusherService;
-import com.yy.dc.svr.Protocol;
-import com.yy.dc.svr.bus.sdk.ServiceConnection;
-import com.yy.dc.svr.bus.sdk.ServiceStatement;
 
 /**
  * quartz的Job实现 : 定时任务触发
@@ -61,17 +57,7 @@ public class AgentMonitorJob implements Job {
 	public static void alert(String[] receivers, String title, String msg, String url, String[] sendTypes) {
 		logger.info("alert receivers={}, sendTypes={}, msg={}", new Object[] { receivers, sendTypes, msg });
 		try {
-			ServiceConnection authConnection = new ServiceConnection("MessageService");
-			ServiceStatement svrExecutor = null;
-			if (authConnection.supportProtocol(Protocol.HTTP)) {
-				// 组包请求
-				svrExecutor = authConnection.createPackStatement(Protocol.HTTP);
-			} else if (authConnection.supportProtocol(Protocol.HTTPS)) {
-				svrExecutor = authConnection.createPackStatement(Protocol.HTTPS);
-			}
-			// 接口请求
-			IMessagePusherService iMessagePusherService = svrExecutor.createProxyStatement(IMessagePusherService.class);
-			iMessagePusherService.sendMessageToAccounts(receivers, title, msg, url, sendTypes);
+			//TODO send msg
 		} catch (Exception e) {
 			logger.error("alert error", e);
 		}

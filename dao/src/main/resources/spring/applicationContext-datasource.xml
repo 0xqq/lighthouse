@@ -59,29 +59,4 @@
 		<property name="password" value="${mysql_password}" />
 	</bean>
 
-	<!-- <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean"> 
-		<property name="jndiName"><value>java:comp/env/jdbc/ds</value></property> 
-		</bean> -->
-
-	<!-- log4jdbc可以将数据源执行的sql将占位符?替换成字符,并以日志打印出来. log4j配置: log4j.logger.jdbc.sqltiming=INFO 
-		详情请看: http://code.google.com/p/rapid-framework/wiki/log4jdbc 如oracle示例: 原来的sql: 
-		select * from user where birth_date = ? and username = ? and age > ? 转换后sql: 
-		select * from user where birth_date = to_date('2010-08-13','yyyy-mm-dd') 
-		and username = 'badqiu' and age > 20 -->
-	<bean id="log4jdbcInterceptor" class="net.sf.log4jdbc.DataSourceSpyInterceptor" />
-	<bean id="dataSourceLog4jdbcAutoProxyCreator"
-		class="org.springframework.aop.framework.autoproxy.BeanNameAutoProxyCreator">
-		<property name="interceptorNames">
-			<list>
-				<value>log4jdbcInterceptor</value>
-			</list>
-		</property>
-		<property name="beanNames">
-			<list>
-				<value>masterDataSource</value>
-				<value>slaveDataSource</value>
-			</list>
-		</property>
-	</bean>
-
 </beans>

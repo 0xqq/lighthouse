@@ -275,11 +275,6 @@
 					</exclusion>
 				</exclusions>
 			</dependency>
-			<dependency>
-				<groupId>net.sf.log4jdbc</groupId>
-				<artifactId>log4jdbc4</artifactId>
-				<version>1.2.1</version>
-			</dependency>
 			<!-- logging end -->
 
 			<!-- j2ee web spec -->
@@ -399,6 +394,12 @@
 				<artifactId>mvel2</artifactId>
 				<version>2.2.1.Final</version>
 			</dependency>
+			
+			<dependency>
+	            <groupId>org.apache.hadoop</groupId>
+	            <artifactId>hadoop-client</artifactId>
+	            <version>2.4.0</version>
+	        </dependency>
 		</dependencies>
 	</dependencyManagement>
 
