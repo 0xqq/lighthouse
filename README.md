@@ -10,11 +10,11 @@
 
 二、架构
 ---------------------
-![image](https://github.com/meteorchenwu/meteor/blob/master/doc/ppt/meteor%E6%9E%B6%E6%9E%841.jpg)
+![image](https://github.com/meteorchenwu/lighthouse/blob/master/doc/%E6%9E%B6%E6%9E%84/lighthouse%E6%9E%B6%E6%9E%84%E5%9B%BE.png)
 
 三、产品示意图
 ---------------------
-![image](https://github.com/meteorchenwu/meteor/blob/master/doc/ppt/meteor%E6%9E%B6%E6%9E%841.jpg)
+![image](https://github.com/meteorchenwu/lighthouse/blob/master/doc/%E9%A1%B5%E9%9D%A2%E5%8E%9F%E5%9E%8B/%E6%A6%82%E5%86%B5.jpg)
 
 四、代码入口
 <pre>
