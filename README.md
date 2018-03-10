@@ -19,7 +19,7 @@
 四、代码入口
 ---------------------
 <pre>
-目前前台页面暂时没有公布出来，前台web-home的操作入口代码：
+目前前台页面暂时没有公布出来，关键 代码入口如下：
 
 任务的增删改查：com.huya.lighthouse.service.impl.BODefTaskServiceImpl
 
