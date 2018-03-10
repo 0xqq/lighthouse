@@ -39,11 +39,6 @@
 			<groupId>mysql</groupId>
 			<artifactId>mysql-connector-java</artifactId>
 		</dependency>
-
-		<dependency>
-			<groupId>com.vertica</groupId>
-			<artifactId>vertica</artifactId>
-		</dependency>
 		
 		<!-- test BEGIN -->
 		<dependency>
