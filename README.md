@@ -25,7 +25,7 @@
 
 任务人工操作入口：com.huya.lighthouse.service.impl.TaskActionServiceImpl
 
-引擎入口：com.huya.lighthouse.server。TaskAction
+引擎入口：com.huya.lighthouse.server.TaskAction
 
-带密码ssh生成类：com.huya.lighthouse.util。KeyGen
+带密码ssh生成类：com.huya.lighthouse.util.KeyGen
 </pre>
