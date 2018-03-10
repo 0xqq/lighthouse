@@ -17,6 +17,7 @@
 ![image](https://github.com/meteorchenwu/lighthouse/blob/master/doc/%E9%A1%B5%E9%9D%A2%E5%8E%9F%E5%9E%8B/%E6%A6%82%E5%86%B5.jpg)
 
 四、代码入口
+---------------------
 <pre>
 目前前台页面暂时没有公布出来，前台web-home的操作入口代码：
 
