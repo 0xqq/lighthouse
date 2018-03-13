@@ -50,9 +50,9 @@ public abstract class AbstractPlugin {
 			taskBody = taskBody.replaceAll("([^\\\\])\\\\t", "$1\t");
 			curLength = taskBody.length();
 		}
-		logger.info(taskBody);
 		AbstractBODefTask boDefTask = ModelConverters.str2BO(taskBody);
 		objectMap.put("boDefTask", boDefTask);
+		logger.info(boDefTask.toString());
 		return boDefTask;
 	}
 

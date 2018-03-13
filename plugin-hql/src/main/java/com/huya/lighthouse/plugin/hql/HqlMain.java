@@ -108,6 +108,6 @@ public class HqlMain extends AbstractPlugin {
 	}
 
 	private static String getHdfsPath() {
-		return "hdfs://huyacluster/tmp/lighthouse/analyse-result";
+		return "hdfs://cluster/tmp/lighthouse/analyse-result";
 	}
 }
