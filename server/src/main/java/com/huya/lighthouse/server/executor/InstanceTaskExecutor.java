@@ -1,17 +1,5 @@
 package com.huya.lighthouse.server.executor;
 
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang.exception.ExceptionUtils;
-import org.apache.commons.lang.time.DateFormatUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.huya.lighthouse.model.po.def.DefAgentGroup;
 import com.huya.lighthouse.model.po.def.DefMonitorDur;
 import com.huya.lighthouse.model.po.def.DefMonitorRetry;
@@ -20,12 +8,7 @@ import com.huya.lighthouse.model.po.instance.InstanceTaskDepend;
 import com.huya.lighthouse.model.po.instance.InstanceTaskLog;
 import com.huya.lighthouse.model.type.Status;
 import com.huya.lighthouse.server.TaskAction;
-import com.huya.lighthouse.server.factory.DefAgentGroupFactory;
-import com.huya.lighthouse.server.factory.InstanceTaskCacheFactory;
-import com.huya.lighthouse.server.factory.InstanceTaskLockFactory;
-import com.huya.lighthouse.server.factory.ServiceBeanFactory;
-import com.huya.lighthouse.server.factory.TaskRunningFactory;
-import com.huya.lighthouse.server.factory.ThreadPublicFactory;
+import com.huya.lighthouse.server.factory.*;
 import com.huya.lighthouse.server.instance.initiator.InstanceTaskDependInitiator;
 import com.huya.lighthouse.server.model.InstanceTaskKey;
 import com.huya.lighthouse.server.model.InstanceTaskKeyDetail;
@@ -34,11 +17,23 @@ import com.huya.lighthouse.server.util.AlertUtils;
 import com.huya.lighthouse.server.util.TriggerExtServiceUtils;
 import com.huya.lighthouse.util.DateUtils2;
 import com.huya.lighthouse.util.SSHAsynExecUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
+import org.apache.commons.lang.time.DateFormatUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
 
 /**
  * 任务实例执行器
  */
-public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, Callable<String> {
+public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, Callable<String>, Serializable {
 
 	private static Logger logger = LoggerFactory.getLogger(InstanceTaskExecutor.class);
 
@@ -77,9 +72,6 @@ public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, C
 				if (isDone(instanceTask)) {
 					return instanceTask.getStatus();
 				}
-				if (TaskRunningFactory.addInstatnceTask(this)) {
-					return "";
-				}
 				setStartStatus(instanceTask);
 			} catch (Exception e) {
 				logger.error("call start: " + instanceTaskKeyDetail, e);
@@ -113,17 +105,22 @@ public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, C
 				setEndStatus(instanceTask, status, 1);
 			} finally {
 				InstanceTaskLockFactory.returnLock(instanceTaskLock);
-				TaskRunningFactory.delInstatnceTask(instanceTaskKeyDetail.getTaskId(), instanceTaskKeyDetail.getTaskDate());
 				rmSubmittedPath();
-			}
+            }
 
-			return status;
-		} catch (Throwable e) {
-			logger.error("call: " + instanceTaskKeyDetail, e);
-			insertInstanceTaskLog(e);
-			return "";
-		} finally {
-			try {
+            return status;
+        } catch (Throwable e) {
+            logger.error("call: " + instanceTaskKeyDetail, e);
+            insertInstanceTaskLog(e);
+            return "";
+        } finally {
+		    try {
+                TaskRunningFactory.delInstatnceTask(instanceTaskKeyDetail.getTaskId(), instanceTaskKeyDetail.getTaskDate());
+            } catch (Exception e) {
+                logger.error("delInstatnceTask" + instanceTaskKeyDetail, e);
+            }
+
+            try {
 				triggerExtService(getInstanceTask());
 			} catch (Exception e) {
 				logger.error("triggerExtService task: " + instanceTaskKeyDetail, e);
@@ -220,9 +217,9 @@ public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, C
 		}
 
 		final InstanceTask instanceTask = getInstanceTask();
-		if (instanceTask == null) {
-			return;
-		}
+        if (isInvalidInstanceTask(instanceTask)) {
+            return;
+        }
 		if (StringUtils.equals(instanceTask.getStatus(), Status.FAIL.name())) {
 			List<DefMonitorRetry> defMonitorRetryList = ServiceBeanFactory.getDefMonitorRetryService().getByTaskId(instanceTaskKeyDetail.getTaskId(), 1);
 			if (defMonitorRetryList != null) {
