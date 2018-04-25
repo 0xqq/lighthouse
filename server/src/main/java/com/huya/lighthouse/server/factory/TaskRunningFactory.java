@@ -58,7 +58,9 @@ public class TaskRunningFactory {
 			while (instanceTaskExecutor != null && instanceTaskExecutor.getInstanceTask() != null && (instanceTaskExecutor.getInstanceTask().getIsValid() == null || instanceTaskExecutor.getInstanceTask().getIsValid() == 0)) {
                 instanceTaskExecutor = taskRunInfo.getWaitingTaskQueue().poll();
             }
-            submit(instanceTaskExecutor);
+            if (instanceTaskExecutor != null) {
+				submit(instanceTaskExecutor);
+			}
 		}
 		if (taskRunInfo.isEmpty()) {
 			taskRunInfoMap.remove(taskId);

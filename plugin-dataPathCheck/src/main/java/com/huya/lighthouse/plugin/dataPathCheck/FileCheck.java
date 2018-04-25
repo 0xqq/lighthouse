@@ -66,6 +66,9 @@ public class FileCheck {
 
 	public static int getFileLineNum(File file) {
 		long fileLength = file.length();
+		if (fileLength == 0) {
+			return 0;
+		}
 		LineNumberReader rf = null;
 		int lineNum = 0;
 		try {
