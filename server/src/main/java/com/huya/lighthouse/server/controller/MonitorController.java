@@ -42,15 +42,16 @@ public class MonitorController {
 			strb.append(taskId).append("\n");
 			strb.append("    Run: ").append(taskRunInfoTmp.getRunningTaskMap()).append("\n");
 			strb.append("    Wait: ");
-			Iterator<InstanceTaskExecutor> iter = taskRunInfoTmp.getWaitingTaskQueue().iterator();
 			int i = 0;
-			while (iter.hasNext()) {
+			InstanceTaskExecutor tmp = taskRunInfoTmp.getWaitingTaskQueue().poll();
+			while (tmp != null) {
 				if (i>0) {
 					strb.append(", ");
 				}
 				i++;
-				InstanceTaskKeyDetail instanceTaskKeyDetail = iter.next().getInstanceTaskKeyDetail();
+				InstanceTaskKeyDetail instanceTaskKeyDetail = tmp.getInstanceTaskKeyDetail();
 				strb.append(DateUtils2.dateStr(instanceTaskKeyDetail.getTaskDate())).append("=").append(instanceTaskKeyDetail.getInstanceId());
+				tmp = taskRunInfoTmp.getWaitingTaskQueue().poll();
 			}
             strb.append("\n\n");
 		}
