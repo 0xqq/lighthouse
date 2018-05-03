@@ -1,14 +1,5 @@
 package com.huya.lighthouse.server.executor;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.huya.lighthouse.model.po.def.DefAgentGroup;
 import com.huya.lighthouse.model.po.instance.InstanceTask;
 import com.huya.lighthouse.model.type.Status;
@@ -20,6 +11,14 @@ import com.huya.lighthouse.server.factory.ServiceBeanFactory;
 import com.huya.lighthouse.server.model.InstanceTaskKey;
 import com.huya.lighthouse.server.model.InstanceTaskLock;
 import com.huya.lighthouse.util.SSHAsynExecUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 public class AgentSelector {
 
@@ -40,53 +39,55 @@ public class AgentSelector {
 		InstanceTask preInstanceTask = ServiceBeanFactory.getInstanceTaskService().getSameAgentRun(instanceTask.getTaskId(), instanceTask.getTaskDate());
 		if (preInstanceTask != null) {
 			targetDefAgentGroup = DefAgentGroupFactory.getAgentHost(preInstanceTask.getAgentHostGroup(), preInstanceTask.getAgentHostRun());
-			boolean isFreeOK = isMemoryOK(targetDefAgentGroup);
-			boolean isDfOK = isDiskOK(targetDefAgentGroup);
-			int n = 0;
-			while (!(isFreeOK && isDfOK)) {
-				logger.info("SameAgentRun wait satisfy: " + instanceTaskExecutor.getInstanceTaskKeyDetail());
-				if (InstanceTaskExecutor.isDone(instanceTask)) {
-					return null;
-				}
-				if (n == 20) {
-					logger.warn("SameAgentRun wait satisfy fail: " + instanceTaskExecutor.getInstanceTaskKeyDetail());
-					agentHostMap = DefAgentGroupFactory.getByAgentHostGroup(instanceTask.getAgentHostGroup());
-					if (agentHostMap == null || agentHostMap.size() <= 1) {
+			if (targetDefAgentGroup != null) {
+				boolean isFreeOK = isMemoryOK(targetDefAgentGroup);
+				boolean isDfOK = isDiskOK(targetDefAgentGroup);
+				int n = 0;
+				while (!(isFreeOK && isDfOK)) {
+					logger.info("SameAgentRun wait satisfy: " + instanceTaskExecutor.getInstanceTaskKeyDetail());
+					if (InstanceTaskExecutor.isDone(instanceTask)) {
 						return null;
 					}
-
-					List<InstanceTask> sameAgentInstanceList = new ArrayList<InstanceTask>();
-					instanceTask.setStatus(Status.INIT.name());
-					sameAgentInstanceList.add(instanceTask);
-					InstanceTask minPreInstanceTask = null;
-					while (preInstanceTask != null) {
-						preInstanceTask.setStatus(Status.INIT.name());
-						sameAgentInstanceList.add(preInstanceTask);
-						minPreInstanceTask = preInstanceTask;
-						preInstanceTask = ServiceBeanFactory.getInstanceTaskService().getSameAgentRun(preInstanceTask.getTaskId(), preInstanceTask.getTaskDate());
-					}
-					for (InstanceTask sameAgentInstance : sameAgentInstanceList) {
-						InstanceTaskKey instanceTaskKey = new InstanceTaskKey(sameAgentInstance.getTaskId(), sameAgentInstance.getTaskDate());
-						InstanceTaskLock instanceTaskLock = InstanceTaskLockFactory.borrowLock(instanceTaskKey);
-						instanceTaskLock.getLock().lock();
-						try {
-							ServiceBeanFactory.getInstanceTaskService().update(minPreInstanceTask);
-							InstanceTaskCacheFactory.put(sameAgentInstance);
-						} finally {
-							InstanceTaskLockFactory.returnLock(instanceTaskLock);
+					if (n == 20) {
+						logger.warn("SameAgentRun wait satisfy fail: " + instanceTaskExecutor.getInstanceTaskKeyDetail());
+						agentHostMap = DefAgentGroupFactory.getByAgentHostGroup(instanceTask.getAgentHostGroup());
+						if (agentHostMap == null || agentHostMap.size() <= 1) {
+							return null;
 						}
+
+						List<InstanceTask> sameAgentInstanceList = new ArrayList<InstanceTask>();
+						instanceTask.setStatus(Status.INIT.name());
+						sameAgentInstanceList.add(instanceTask);
+						InstanceTask minPreInstanceTask = null;
+						while (preInstanceTask != null) {
+							preInstanceTask.setStatus(Status.INIT.name());
+							sameAgentInstanceList.add(preInstanceTask);
+							minPreInstanceTask = preInstanceTask;
+							preInstanceTask = ServiceBeanFactory.getInstanceTaskService().getSameAgentRun(preInstanceTask.getTaskId(), preInstanceTask.getTaskDate());
+						}
+						for (InstanceTask sameAgentInstance : sameAgentInstanceList) {
+							InstanceTaskKey instanceTaskKey = new InstanceTaskKey(sameAgentInstance.getTaskId(), sameAgentInstance.getTaskDate());
+							InstanceTaskLock instanceTaskLock = InstanceTaskLockFactory.borrowLock(instanceTaskKey);
+							instanceTaskLock.getLock().lock();
+							try {
+								ServiceBeanFactory.getInstanceTaskService().update(minPreInstanceTask);
+								InstanceTaskCacheFactory.put(sameAgentInstance);
+							} finally {
+								InstanceTaskLockFactory.returnLock(instanceTaskLock);
+							}
+						}
+						TaskAction.run(minPreInstanceTask.getTaskId(), minPreInstanceTask.getTaskDate(), minPreInstanceTask.getInstanceId(), 0, minPreInstanceTask.getIsForceRun());
+						return null;
 					}
-					TaskAction.run(minPreInstanceTask.getTaskId(), minPreInstanceTask.getTaskDate(), minPreInstanceTask.getInstanceId(), 0, minPreInstanceTask.getIsForceRun());
-					return null;
+					Thread.sleep(120000l);
+					isFreeOK = isMemoryOK(targetDefAgentGroup);
+					isDfOK = isDiskOK(targetDefAgentGroup);
+					n++;
+					instanceTask = instanceTaskExecutor.getInstanceTask();
 				}
-				Thread.sleep(120000l);
-				isFreeOK = isMemoryOK(targetDefAgentGroup);
-				isDfOK = isDiskOK(targetDefAgentGroup);
-				n++;
-				instanceTask = instanceTaskExecutor.getInstanceTask();
-			}
-			if (targetDefAgentGroup != null) {
-				return targetDefAgentGroup;
+				if (targetDefAgentGroup != null) {
+					return targetDefAgentGroup;
+				}
 			}
 		}
 

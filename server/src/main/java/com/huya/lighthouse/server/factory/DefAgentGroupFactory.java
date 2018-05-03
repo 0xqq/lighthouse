@@ -1,13 +1,13 @@
 package com.huya.lighthouse.server.factory;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import com.huya.lighthouse.model.po.def.DefAgentGroup;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.huya.lighthouse.model.po.def.DefAgentGroup;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class DefAgentGroupFactory {
 
@@ -38,12 +38,24 @@ public class DefAgentGroupFactory {
 		return defAgentGroupMap.get(agentHostGroup);
 	}
 	
-	public static DefAgentGroup getAgentHost(String agentHostGroup,String agentHost) {
+	public static DefAgentGroup getAgentHost(String agentHostGroup, String agentHost) {
 		Map<String, DefAgentGroup> agentHostMap = defAgentGroupMap.get(agentHostGroup);
 		if(agentHostMap == null) {
 			return null;
 		}
-		return agentHostMap.get(agentHost);
+		DefAgentGroup result =  agentHostMap.get(agentHost);
+		if (result == null) {
+			for (Map.Entry<String, Map<String, DefAgentGroup>> entryOut : defAgentGroupMap.entrySet()) {
+				Map<String, DefAgentGroup> agentHostMapTmp = entryOut.getValue();
+				for (Map.Entry<String, DefAgentGroup> entryIn : agentHostMapTmp.entrySet()) {
+					DefAgentGroup defAgentGroupTmp = entryIn.getValue();
+					if (StringUtils.equals(agentHost, defAgentGroupTmp.getAgentHost())) {
+						return defAgentGroupTmp;
+					}
+				}
+			}
+		}
+		return result;
 	}
 
 	public static Map<String, Map<String, DefAgentGroup>> getAll() {
