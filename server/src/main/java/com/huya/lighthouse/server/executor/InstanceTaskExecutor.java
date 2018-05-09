@@ -1,5 +1,6 @@
 package com.huya.lighthouse.server.executor;
 
+import com.huya.lighthouse.model.bo.misc.InstanceStatus;
 import com.huya.lighthouse.model.po.def.DefAgentGroup;
 import com.huya.lighthouse.model.po.def.DefMonitorDur;
 import com.huya.lighthouse.model.po.def.DefMonitorRetry;
@@ -20,6 +21,7 @@ import com.huya.lighthouse.util.SSHAsynExecUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.apache.commons.lang.time.DateFormatUtils;
+import org.apache.commons.lang.time.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -195,6 +197,22 @@ public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, C
 			for (final InstanceTaskDepend instanceTaskDepend : instanceTaskPostDependList) {
 				if (instanceTaskDepend == null) {
 					continue;
+				}
+				//跨天场景，防止重跑很久之前的日期，引发爆炸性调用，涉及自依赖，滑动依赖
+				if (!DateUtils.isSameDay(instanceTaskDepend.getTaskDate(), instanceTaskDepend.getPreTaskDate())) {
+					InstanceTaskKey instanceTaskKey = new InstanceTaskKey(instanceTaskDepend.getTaskId(), instanceTaskDepend.getTaskDate());
+					InstanceTaskLock instanceTaskLock = InstanceTaskLockFactory.borrowLock(instanceTaskKey);
+					instanceTaskLock.getLock().lock();
+					try {
+						List<InstanceStatus> instanceStatusList = ServiceBeanFactory.getInstanceTaskService().getInstanceStatuss(instanceTaskDepend.getTaskId(), instanceTaskDepend.getTaskDate(), instanceTaskDepend.getTaskDate());
+						if ( !(instanceStatusList != null && instanceStatusList.size() == 1 && StringUtils.equals(instanceStatusList.get(0).getStatus(), Status.INIT.name())) ) {
+							continue;
+						}
+					} catch (Exception e) {
+						logger.error("", e);
+					} finally {
+						InstanceTaskLockFactory.returnLock(instanceTaskLock);
+					}
 				}
 				ThreadPublicFactory.cachedThreadPool.submit(new Runnable() {
 					@Override
