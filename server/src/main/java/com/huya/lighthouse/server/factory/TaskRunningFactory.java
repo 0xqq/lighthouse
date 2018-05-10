@@ -4,12 +4,10 @@ import com.huya.lighthouse.model.po.instance.InstanceTask;
 import com.huya.lighthouse.server.executor.InstanceTaskExecutor;
 import com.huya.lighthouse.server.model.InstanceTaskKeyDetail;
 import com.huya.lighthouse.server.model.TaskRunInfo;
-import com.huya.lighthouse.util.DateUtils2;
 import org.apache.commons.lang.SerializationUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadPoolExecutor;
 
@@ -31,36 +29,40 @@ public class TaskRunningFactory {
 			return true;
 		}
 		Integer taskId = instanceTaskKeyDetail.getTaskId();
-		Date taskDate = instanceTaskKeyDetail.getTaskDate();
 		TaskRunInfo taskRunInfo = taskRunInfoMap.get(taskId);
 		if (taskRunInfo == null) {
 			taskRunInfo = new TaskRunInfo();
 			taskRunInfoMap.put(taskId, taskRunInfo);
 		}
+
+		if (taskRunInfo.isSubmitted(instanceTaskKeyDetail)) {
+			return true;
+		}
 		if (taskRunInfo.getRunningSize() >= instanceTask.getMaxRunNum()) {
-			taskRunInfo.getWaitingTaskQueue().put(instanceTaskExecutor);
+			taskRunInfo.putQueue(instanceTaskExecutor);
 			return true;
 		} else {
-			taskRunInfo.addRunning(taskDate);
+			taskRunInfo.addRunning(instanceTaskKeyDetail);
 			return false;
 		}
 	}
 
-	public static synchronized void delInstatnceTask(Integer taskId, Date taskDate) {
+	public static synchronized void delInstatnceTask(InstanceTaskKeyDetail instanceTaskKeyDetail) {
+		Integer taskId = instanceTaskKeyDetail.getTaskId();
 		TaskRunInfo taskRunInfo = taskRunInfoMap.get(taskId);
 		if (taskRunInfo == null) {
-			logger.error("taskRunInfo is null for taskId={}, taskDate={}", taskId, DateUtils2.dateStr(taskDate));
+			logger.error("taskRunInfo is null for instanceTaskKeyDetail={}", instanceTaskKeyDetail);
 			return;
 		}
 
-		if (taskRunInfo.removeRunning(taskDate)) {
-			InstanceTaskExecutor instanceTaskExecutor = taskRunInfo.getWaitingTaskQueue().poll();
+		if (taskRunInfo.removeRunning(instanceTaskKeyDetail)) {
+			InstanceTaskExecutor instanceTaskExecutor = taskRunInfo.pollQueue();
 			while (instanceTaskExecutor != null && instanceTaskExecutor.getInstanceTask() != null && (instanceTaskExecutor.getInstanceTask().getIsValid() == null || instanceTaskExecutor.getInstanceTask().getIsValid() == 0)) {
-                instanceTaskExecutor = taskRunInfo.getWaitingTaskQueue().poll();
+                instanceTaskExecutor = taskRunInfo.pollQueue();
             }
             if (instanceTaskExecutor != null) {
-				submit(instanceTaskExecutor);
-			}
+                submit(instanceTaskExecutor);
+            }
 		}
 		if (taskRunInfo.isEmpty()) {
 			taskRunInfoMap.remove(taskId);

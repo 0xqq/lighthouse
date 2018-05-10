@@ -4,19 +4,21 @@ import com.huya.lighthouse.server.executor.InstanceTaskExecutor;
 import com.huya.lighthouse.util.DateUtils2;
 
 import java.io.Serializable;
-import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class TaskRunInfo implements Serializable {
 
+    // for concurrent submit task
+    private ConcurrentHashMap<InstanceTaskKeyDetail, String> submittedSet = new ConcurrentHashMap<InstanceTaskKeyDetail, String>();
     // for rerun running task
     private ConcurrentHashMap<String, AtomicInteger> runningTaskMap = new ConcurrentHashMap<String, AtomicInteger>();
     private PriorityBlockingQueue<InstanceTaskExecutor> waitingTaskQueue = new PriorityBlockingQueue<InstanceTaskExecutor>();
 
-    public void addRunning(Date taskDate) {
-        String taskDateStr = DateUtils2.dateStr(taskDate);
+    public void addRunning(InstanceTaskKeyDetail instanceTaskKeyDetail) {
+        submittedSet.put(instanceTaskKeyDetail, "");
+        String taskDateStr = DateUtils2.dateStr(instanceTaskKeyDetail.getTaskDate());
         AtomicInteger zero = new AtomicInteger();
         AtomicInteger curVal = runningTaskMap.putIfAbsent(taskDateStr, zero);
         if (curVal == null) {
@@ -25,8 +27,9 @@ public class TaskRunInfo implements Serializable {
         curVal.incrementAndGet();
     }
 
-    public boolean removeRunning(Date taskDate) {
-        String taskDateStr = DateUtils2.dateStr(taskDate);
+    public boolean removeRunning(InstanceTaskKeyDetail instanceTaskKeyDetail) {
+        submittedSet.remove(instanceTaskKeyDetail);
+        String taskDateStr = DateUtils2.dateStr(instanceTaskKeyDetail.getTaskDate());
         AtomicInteger zero = new AtomicInteger();
         AtomicInteger curVal = runningTaskMap.putIfAbsent(taskDateStr, zero);
         if (curVal == null) {
@@ -40,8 +43,29 @@ public class TaskRunInfo implements Serializable {
         return false;
     }
 
+    public void putQueue(InstanceTaskExecutor instanceTaskExecutor) {
+        submittedSet.put(instanceTaskExecutor.getInstanceTaskKeyDetail(), "");
+        waitingTaskQueue.put(instanceTaskExecutor);
+    }
+
+    public InstanceTaskExecutor pollQueue() {
+        InstanceTaskExecutor instanceTaskExecutor = waitingTaskQueue.poll();
+        if (instanceTaskExecutor != null && instanceTaskExecutor.getInstanceTaskKeyDetail() != null) {
+            submittedSet.remove(instanceTaskExecutor.getInstanceTaskKeyDetail());
+        }
+        return instanceTaskExecutor;
+    }
+
     public int getRunningSize() {
         return runningTaskMap.size();
+    }
+
+    public boolean isEmpty() {
+        return runningTaskMap.isEmpty() && waitingTaskQueue.isEmpty();
+    }
+
+    public boolean isSubmitted(InstanceTaskKeyDetail instanceTaskKeyDetail) {
+        return submittedSet.contains(instanceTaskKeyDetail);
     }
 
     public ConcurrentHashMap<String, AtomicInteger> getRunningTaskMap() {
@@ -50,10 +74,6 @@ public class TaskRunInfo implements Serializable {
 
     public PriorityBlockingQueue<InstanceTaskExecutor> getWaitingTaskQueue() {
         return waitingTaskQueue;
-    }
-
-    public boolean isEmpty() {
-        return runningTaskMap.isEmpty() && waitingTaskQueue.isEmpty();
     }
 
     @Override

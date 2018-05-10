@@ -117,7 +117,7 @@ public class InstanceTaskExecutor implements Comparable<InstanceTaskExecutor>, C
             return "";
         } finally {
 		    try {
-                TaskRunningFactory.delInstatnceTask(instanceTaskKeyDetail.getTaskId(), instanceTaskKeyDetail.getTaskDate());
+                TaskRunningFactory.delInstatnceTask(instanceTaskKeyDetail);
             } catch (Exception e) {
                 logger.error("delInstatnceTask" + instanceTaskKeyDetail, e);
             }
